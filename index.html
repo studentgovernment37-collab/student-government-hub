@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Student Government Hub</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#f4f3fb;--card:#fff;--tx:#1b1840;--mu:#6b6890;--bd:#e3e0f3;--pr:#6d4aff;--ac:#2f8cff;--side:#fff}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0b0f2a;--card:#151a3d;--tx:#eceaff;--mu:#9b98c8;--bd:#272d5c;--side:#10143a}}
+:root[data-theme=dark]{--bg:#0b0f2a;--card:#151a3d;--tx:#eceaff;--mu:#9b98c8;--bd:#272d5c;--side:#10143a}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}*{box-sizing:border-box}
+body{margin:0;font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;background:var(--bg);color:var(--tx);display:flex;min-height:100vh}
+nav{width:220px;background:var(--side);border-right:1px solid var(--bd);padding:16px 10px;display:flex;flex-direction:column;gap:4px;position:sticky;top:0;height:100vh;transition:.2s}
+nav.c{width:62px}nav.c span{display:none}
+nav button{all:unset;cursor:pointer;padding:10px 12px;border-radius:10px;color:var(--mu);display:flex;gap:10px;white-space:nowrap}
+nav button:hover{background:var(--bd)}nav button.on{background:linear-gradient(135deg,var(--pr),var(--ac));color:#fff}
+main{flex:1;padding:22px;min-width:0;max-width:1100px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:16px;box-shadow:0 4px 18px #0001;animation:in .3s}
+@keyframes in{from{opacity:0;transform:translateY(8px)}}
+.hero{background:linear-gradient(135deg,#1a1650,#5b34d6 70%,#2f8cff);color:#fff;border-radius:20px;padding:24px;margin-bottom:16px}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.big{font-size:28px;font-weight:700}.mu{color:var(--mu)}
+button.p,select,input,textarea{font:inherit;border-radius:10px;border:1px solid var(--bd);background:var(--card);color:var(--tx);padding:8px 12px}
+button.p{background:linear-gradient(135deg,var(--pr),var(--ac));color:#fff;border:0;cursor:pointer}button.p:hover{filter:brightness(1.1)}
+button.g{cursor:pointer;border:1px solid var(--bd);background:none;color:var(--tx);border-radius:8px;padding:5px 10px;font:inherit;font-size:13px}
+textarea{width:100%;min-height:90px}.top{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap}
+.kan{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}.kan>div{background:var(--bg);border-radius:12px;padding:8px;min-height:120px}
+.t{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:8px;margin:6px 0;font-size:14px}
+.plan{white-space:pre-wrap;line-height:1.55}.row{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+#bot{position:fixed;right:16px;bottom:16px;z-index:5}#botp{display:none;width:min(340px,92vw);height:420px;flex-direction:column;margin-bottom:8px}
+#msgs{flex:1;overflow:auto;font-size:14px}.m{margin:6px 0;padding:8px;border-radius:10px;background:var(--bg);white-space:pre-wrap}
+#toast{position:fixed;top:14px;right:14px;background:var(--pr);color:#fff;padding:10px 14px;border-radius:10px;display:none;z-index:9}
+@media(max-width:700px){nav{width:62px}nav span{display:none}main{padding:12px}}
+</style></head><body>
+<script>
+/* Static-site shim: replaces the claude.ai runtime with browser storage + a Netlify AI proxy */
+(function(){
+const L={};const key=n=>"sgh_"+n,read=n=>{try{return JSON.parse(localStorage.getItem(key(n))||"{}")}catch(e){return{}}};
+const snap=n=>{const o=read(n);return{docs:Object.keys(o).map(i=>({id:i,data:()=>o[i]}))}};
+const fire=n=>(L[n]||[]).forEach(f=>f(snap(n)));
+const db={collection:n=>({doc:i=>({
+ set:async d=>{const o=read(n);o[i]=d;localStorage.setItem(key(n),JSON.stringify(o));fire(n)},
+ update:async d=>{const o=read(n);o[i]=Object.assign({},o[i],d);localStorage.setItem(key(n),JSON.stringify(o));fire(n)},
+ delete:async()=>{const o=read(n);delete o[i];localStorage.setItem(key(n),JSON.stringify(o));fire(n)}}),
+ onSnapshot:f=>{(L[n]=L[n]||[]).push(f);setTimeout(()=>f(snap(n)));return()=>{}}})};
+const code=()=>localStorage.getItem("sgh_code")||(()=>{const c=prompt("Enter your team access code");if(c)localStorage.setItem("sgh_code",c);return c||""})();
+async function groq(b){const r=await fetch("/.netlify/functions/ai",{method:"POST",headers:{"Content-Type":"application/json","x-team-code":code()},body:JSON.stringify(b)});
+ if(r.status==401){localStorage.removeItem("sgh_code");throw{code:"not_granted",message:"Wrong access code"}}
+ if(!r.ok)throw{code:"error",message:"AI service error ("+r.status+")"};return r.json()}
+const sample=async(input,o={})=>{const msgs=typeof input=="string"?[{role:"user",content:input}]:input.slice();const T=o.tools,tools=T&&T.length?T.map(t=>({type:"function",function:{name:t.name,description:t.description,parameters:t.inputSchema||{type:"object",properties:{}}}})):undefined;
+ for(let k=0;k<5;k++){const j=await groq({messages:msgs,tools});const m=j.choices[0].message;
+  if(m.tool_calls&&m.tool_calls.length){msgs.push(m);for(const c of m.tool_calls){let res;try{const t=T.find(x=>x.name==c.function.name);res=await t.execute(JSON.parse(c.function.arguments||"{}"))}catch(e){res={error:String(e.message||e)}}msgs.push({role:"tool",tool_call_id:c.id,content:JSON.stringify(res)})}continue}
+  const text=m.content||"";o.onText&&o.onText({text,delta:text});return{text,truncated:false}}
+ return{text:"Sorry, I couldn't finish that.",truncated:true}};
+const dl={save:async({filename,data})=>{const a=document.createElement("a");a.href=URL.createObjectURL(data instanceof Blob?data:new Blob([data]));a.download=filename;a.click();return"saved"}};
+const M={user:{},db,sample,downloads:dl,assets:null};
+window.claude={use:async n=>M[n]||null};
+})();
+</script>
+
+<nav id="nav"></nav>
+<main><div class="top"><div><b>Student Government Hub</b> <span class="mu" id="who"></span></div>
+<div class="row"><input id="q" placeholder="Search…" oninput="S.q=this.value;go(S.page)"><select id="role" onchange="S.me=this.value;go(S.page)"></select><button class="g" onclick="toggleTheme()">◐ Theme</button><button class="g" onclick="document.getElementById('nav').classList.toggle('c')">☰</button></div></div>
+<div id="v"></div></main>
+<div id="bot"><div class="card" id="botp"><b>GovBot</b><div id="msgs"></div><div class="row"><input id="bi" style="flex:1" placeholder="Ask GovBot…" onkeydown="if(event.key=='Enter')bot()"><button class="g" id="mic" onclick="listen()" title="Speak to GovBot">🎤</button><button class="g" id="spk" onclick="SPEAK=!SPEAK;this.style.opacity=SPEAK?1:.45;toast(SPEAK?'GovBot will read replies aloud':'Voice replies off')" style="opacity:.45" title="Read replies aloud">🔊</button><button class="p" onclick="bot()">Send</button></div></div><button class="p" onclick="var p=document.getElementById('botp');p.style.display=p.style.display=='flex'?'none':'flex'">🤖 GovBot</button></div>
+<div id="toast"></div>
+<script>
+const LEAD=["Sakshara","Siddharth","Jairam"],POS={Sakshara:"President",Siddharth:"President",Jairam:"Vice President"};
+const HOUSES={Tigers:["Abhinav","Navya"],Whales:["Preksha","Adwiti"],Hawks:["Saanvi","Keesha"],Tuskers:["Shaurya","Marcus"]};
+const HCOL={Tigers:"#f08a24",Whales:"#2f8cff",Hawks:"#e5484d",Tuskers:"#2eae6d"};
+const STAT=["Not Started","In Progress","Under Review","Completed"],PST=["Idea","Planning","Approved","In Progress","Completed","Archived"];
+const NAVS=[["dash","🏠","Dashboard"],["plan","✨","AI Event Planner"],["proj","📁","Projects"],["task","✅","Task Manager"],["docs","📄","Document Studio"],["poster","🎨","Poster Studio"],["ann","📣","Announcements"],["house","🏫","Houses"]];
+const S={me:"Sakshara",page:"dash",q:"",projects:[],tasks:[],ann:[],cur:null,plan:"",idea:"",house:"Tigers",busy:false,doc:{tpl:"Event proposal",name:"",date:"",venue:"",details:"",body:"",house:"All"},pst:{title:"Your Event Title",sub:"A subtitle goes here",date:"",venue:"",c1:"#1a1650",c2:"#5b34d6",ac:"#f5c542",tx:"#ffffff",font:"Georgia, serif",pat:"circles",house:"All",prompt:""},docs:[],psts:[],logo:null,bgi:null};
+let db=null,sample=null,dl=null;
+const $=id=>document.getElementById(id),esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const isLead=()=>LEAD.includes(S.me);
+const myHouse=()=>Object.keys(HOUSES).find(h=>HOUSES[h].includes(S.me));
+const vis=r=>isLead()||!r.house||r.house==="All"||r.house===myHouse();
+function toast(t){const e=$("toast");e.textContent=t;e.style.display="block";setTimeout(()=>e.style.display="none",2600)}
+function toggleTheme(){const r=document.documentElement;r.dataset.theme=(r.dataset.theme||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light"))=="dark"?"light":"dark"}
+const id=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+async function save(col,o){if(!db)return toast("Storage unavailable — sign in to save");try{o.id=o.id||id();await db.collection(col).doc(o.id).set(o);}catch(e){toast("Save failed: "+(e.message||e.code))}}
+async function del(col,i){try{await db.collection(col).doc(i).delete()}catch(e){toast("Delete failed")}}
+function watch(col,key){db.collection(col).onSnapshot(s=>{S[key]=s.docs.map(d=>d.data());go(S.page)},e=>toast("Sync error: "+e.code))}
+async function init(){
+ try{await claude.use("user");db=await claude.use("db");sample=await claude.use("sample");dl=await claude.use("downloads");}catch(e){}
+ if(db){watch("projects","projects");watch("tasks","tasks");watch("announcements","ann");watch("docs","docs");watch("posters","psts")}
+ $("role").innerHTML=LEAD.concat(...Object.values(HOUSES)).map(n=>`<option>${n}</option>`).join("");go("dash")}
+function go(p){S.page=p;$("who").textContent=`· ${S.me} — ${POS[S.me]||myHouse()+" "+(HOUSES[myHouse()][0]==S.me?"House Captain":"Vice Captain")}`;
+ $("nav").innerHTML=NAVS.filter(n=>isLead()||n[0]!="house").map(n=>`<button class="${n[0]==p?"on":""}" onclick="go('${n[0]}')">${n[1]} <span>${n[2]}</span></button>`).join("");
+ $("v").innerHTML=VIEWS[p]();if(p=="poster")draw();if(p=="docs")prev();}
+const mt=()=>S.tasks.filter(vis),mp=()=>S.projects.filter(vis),qf=a=>a.filter(x=>!S.q||JSON.stringify(x).toLowerCase().includes(S.q.toLowerCase()));
+const VIEWS={
+dash(){const t=mt(),p=mp(),over=t.filter(x=>x.status!="Completed"&&x.due&&x.due<new Date().toISOString().slice(0,10)).length;
+ const st=(n,l)=>`<div class="card"><div class="big">${n}</div><div class="mu">${l}</div></div>`;
+ return `<div class="hero"><h1 style="margin:0">Welcome to the Student Government Command Center</h1><p>Think big. Plan smart. Make it happen.</p><div>Hello ${esc(S.me)}${isLead()?" — leadership view":" — "+myHouse()+" view"}</div><br><button class="p" onclick="go('plan')">＋ Create a New Event</button></div>
+ <div class="grid">${st(p.filter(x=>!["Completed","Archived"].includes(x.status)).length,"Active projects")}${st(t.filter(x=>x.status!="Completed").length,"Pending tasks")}${st(over,"Overdue tasks")}${st(p.filter(x=>x.status=="Completed").length,"Completed projects")}</div>
+ <h3>Recent announcements</h3>${S.ann.filter(vis).slice(0,3).map(a=>`<div class="card">${esc(a.title)}<div class="mu">${esc(a.body)}</div></div>`).join("")||`<div class="card mu">No announcements yet.</div>`}
+ <h3>Recent projects</h3>${p.slice(-3).map(x=>`<div class="card">${esc(x.title)} <span class="mu">· ${x.status}</span></div>`).join("")||`<div class="card mu">No projects yet. Describe an idea in the AI Event Planner to start.</div>`}`},
+plan(){return `<div class="card"><h2 style="margin-top:0">AI Event Planner</h2><textarea id="idea" placeholder="Describe your idea. Let AI turn it into a complete event plan...">${esc(S.idea)}</textarea>
+ <div class="row"><select id="ph">${isLead()?`<option>All</option>`+Object.keys(HOUSES).map(h=>`<option>${h}</option>`).join(""):`<option>${myHouse()}</option>`}</select><button class="p" onclick="gen()">${S.busy?"Working…":"Generate plan"}</button></div>
+ ${S.plan?`<hr><div class="row">${[["Improve this plan","Improve this plan: fix gaps and tighten it."],["More creative","Make it more creative with a stronger theme."],["More detailed","Make it more detailed."],["Shorten","Shorten the plan, keep essentials."],["Add games","Add more interactive games."],["Script","Write full opening/closing and anchor scripts for this event."],["Checklist","Generate a detailed preparation checklist."]].map(a=>`<button class="g" onclick="refine('${a[1]}')">${a[0]}</button>`).join("")}</div>
+ <textarea id="fu" style="min-height:50px" placeholder="Follow-up instruction (updates this plan)…"></textarea><div class="row"><button class="g" onclick="refine($('fu').value)">Apply</button></div>
+ <textarea id="pt" class="plan" style="min-height:360px" oninput="S.plan=this.value">${esc(S.plan)}</textarea>
+ <div class="row"><button class="p" onclick="saveProj()">Save to projects</button><button class="g" onclick="toTasks()">Convert into tasks</button><button class="g" onclick="exp()">Download (.md)</button></div>`:""}</div>`},
+proj(){const l=qf(mp());return `<h2>Projects</h2>`+(l.map(x=>`<div class="card" style="margin:8px 0"><b>${esc(x.title)}</b> <span class="mu">· ${esc(x.house)}</span><div class="row"><select onchange="upd('${x.id}',this.value)">${PST.map(s=>`<option ${s==x.status?"selected":""}>${s}</option>`).join("")}</select><button class="g" onclick="S.plan=S.projects.find(p=>p.id=='${x.id}').plan;S.idea=S.projects.find(p=>p.id=='${x.id}').idea||'';S.cur='${x.id}';go('plan')">Open plan</button>${isLead()?`<button class="g" onclick="confirm('Delete project?')&&del('projects','${x.id}')">Delete</button>`:""}</div></div>`).join("")||`<div class="card mu">No projects yet.</div>`)},
+task(){const l=qf(mt()),H=isLead()?null:myHouse(),mem=h=>h==="All"||!HOUSES[h]?[]:HOUSES[h];
+ const can=t=>isLead()||t.house===myHouse();
+ return `<div class="top"><h2>Task Manager${H?" · "+H:""}</h2></div><div class="card"><div class="row"><input id="tt" placeholder="${H?"New "+H+" task":"Task title"}" style="flex:2"><input id="td" type="date">${H?`<select id="ta" disabled><option>${H}</option></select>`:`<select id="ta">${["All"].concat(Object.keys(HOUSES)).map(h=>`<option>${h}</option>`).join("")}</select>`}<select id="tw"><option value="">Unassigned</option>${(H?HOUSES[H]:LEAD.concat(...Object.values(HOUSES))).map(n=>`<option>${n}</option>`).join("")}</select><select id="tp"><option>Medium</option><option>High</option><option>Low</option></select><button class="p" onclick="addTask()">Add</button></div>
+ </div><br>
+ <div class="kan">${STAT.map(s=>`<div><b>${s}</b> <span class="mu">${l.filter(t=>t.status==s).length}</span>${l.filter(t=>t.status==s).map(t=>`<div class="t">${esc(t.title)}<div class="mu">${esc(t.house)}${t.who?" · "+esc(t.who):""} · ${t.priority||""} ${t.due||""}</div>${can(t)?`<select onchange="mv('${t.id}',this.value)">${STAT.map(x=>`<option ${x==s?"selected":""}>${x}</option>`).join("")}</select> <button class="g" onclick="confirm('Delete task?')&&del('tasks','${t.id}')">✕</button>`:`<span class="mu">view only</span>`}</div>`).join("")}</div>`).join("")}</div>`},
+ann(){return `<h2>Announcements</h2>${isLead()?`<div class="card"><input id="at" placeholder="Title" style="width:100%"><textarea id="ab" placeholder="Message"></textarea><div class="row"><select id="ah"><option>All</option>${Object.keys(HOUSES).map(h=>`<option>${h}</option>`).join("")}</select><button class="p" onclick="addAnn()">Publish</button></div></div>`:""}`+(qf(S.ann.filter(vis)).map(a=>`<div class="card" style="margin:8px 0"><b>${esc(a.title)}</b> <span class="mu">· ${esc(a.house)} · ${esc(a.by)}</span><p>${esc(a.body)}</p></div>`).join("")||`<div class="card mu" style="margin-top:8px">Nothing posted yet.</div>`)},
+docs(){const d=S.doc,T=["Event proposal","Official permission letter","Event schedule","Detailed event script","Anchor script","Meeting agenda","Meeting minutes","Budget sheet","Task allocation sheet","Event report","Activity checklist","Invitation letter","Announcement draft","House activity plan","Event feedback form"];const f=(k,p)=>`<input placeholder="${p}" value="${esc(d[k])}" oninput="S.doc.${k}=this.value">`;
+ return `<h2>Document Studio</h2><div class="card"><div class="row"><select onchange="S.doc.tpl=this.value">${T.map(t=>`<option ${t==d.tpl?"selected":""}>${t}</option>`).join("")}</select>${f("name","Event name")}${f("date","Date")}${f("venue","Venue")}<select onchange="S.doc.house=this.value">${(isLead()?["All"].concat(Object.keys(HOUSES)):[myHouse()]).map(h=>`<option ${h==d.house?"selected":""}>${h}</option>`).join("")}</select></div>
+ <textarea style="min-height:60px" placeholder="Event details, people involved, anything the document should include…" oninput="S.doc.details=this.value">${esc(d.details)}</textarea><div class="row"><button class="p" onclick="genDoc()">${S.busy?"Writing…":"Create with AI"}</button></div></div>
+ <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr));margin-top:12px"><div class="card"><b>Edit</b><textarea id="de" style="min-height:420px" oninput="S.doc.body=this.value;prev()">${esc(d.body)}</textarea></div><div class="card"><b>Live preview</b><div id="dp"></div></div></div>
+ <div class="row"><button class="p" onclick="saveDoc()">Save to project docs</button><button class="g" onclick="dlDoc('md')">Download .md</button><button class="g" onclick="dlDoc('html')">Download .html (opens in Word)</button><button class="g" onclick="window.print()">Print / save as PDF</button></div>
+ <h3>Saved documents</h3>${qf(S.docs.filter(vis)).map(x=>`<div class="card" style="margin:6px 0">${esc(x.title)} <span class="mu">· ${esc(x.tpl)} · ${esc(x.house)}</span><div class="row"><button class="g" onclick="S.doc=Object.assign({},S.doc,{body:S.docs.find(z=>z.id=='${x.id}').body,tpl:'${esc(x.tpl)}',name:S.docs.find(z=>z.id=='${x.id}').title});go('docs')">Open</button>${isLead()||x.house===myHouse()?`<button class="g" onclick="confirm('Delete?')&&del('docs','${x.id}')">Delete</button>`:""}</div></div>`).join("")||`<div class="card mu">No saved documents yet.</div>`}`},
+poster(){const p=S.pst,F=[["Elegant serif","Georgia, serif"],["Bold impact","Impact, Haettenschweller, sans-serif"],["Modern sans","Trebuchet MS, system-ui, sans-serif"],["Typewriter","Courier New, monospace"],["Script","Brush Script MT, cursive"]];const c=(k,l)=>`<label class="mu">${l} <input type="color" value="${p[k]}" oninput="S.pst.${k}=this.value;draw()"></label>`,t=(k,ph)=>`<input placeholder="${ph}" value="${esc(p[k])}" oninput="S.pst.${k}=this.value;draw()">`;
+ return `<h2>Poster Studio</h2><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))"><div class="card"><textarea id="pp" style="min-height:70px" placeholder="Describe the poster: e.g. futuristic purple and gold Teachers' Day poster, elegant, premium…" oninput="S.pst.prompt=this.value">${esc(p.prompt)}</textarea><div class="row"><button class="p" onclick="genPoster()">${S.busy?"Designing…":"Design with AI"}</button></div><div class="mu">AI designs the layout, colors and wording; it doesn't paint photos. Add your own picture below.</div><hr>
+ <div class="row">${t("title","Title")}${t("sub","Subtitle")}${t("date","Date")}${t("venue","Venue")}</div>
+ <div class="row">${c("c1","Bg 1")}${c("c2","Bg 2")}${c("ac","Accent")}${c("tx","Text")}</div>
+ <div class="row"><select onchange="S.pst.font=this.value;draw()">${F.map(f=>`<option value="${f[1]}" ${f[1]==p.font?"selected":""}>${f[0]}</option>`).join("")}</select><select onchange="S.pst.pat=this.value;draw()">${["circles","rays","stripes","grid","none"].map(x=>`<option ${x==p.pat?"selected":""}>${x}</option>`).join("")}</select><select onchange="houseCol(this.value)"><option value="">House colors…</option>${Object.keys(HOUSES).map(h=>`<option>${h}</option>`).join("")}</select></div>
+ <div class="row"><label class="g" style="padding:5px 10px;border-radius:8px;cursor:pointer">School logo<input hidden type="file" accept="image/*" onchange="pimg(this.files[0],'logo')"></label><label class="g" style="padding:5px 10px;border-radius:8px;cursor:pointer">Background image<input hidden type="file" accept="image/*" onchange="pimg(this.files[0],'bgi')"></label><button class="g" onclick="S.logo=S.bgi=null;draw()">Clear images</button></div>
+ <div class="row"><button class="p" onclick="dlPoster('png')">Download PNG</button><button class="g" onclick="dlPoster('jpg')">Download JPG</button><button class="g" onclick="savePoster()">Save design</button></div></div>
+ <div class="card" style="text-align:center"><canvas id="cv" width="800" height="1100" style="max-width:100%;height:auto;border-radius:10px"></canvas></div></div>
+ <h3>Saved designs</h3><div class="row">${S.psts.filter(vis).map(x=>`<div class="card"><b>${esc(x.d.title)}</b><div class="mu">${esc(x.house)}</div><button class="g" onclick="S.pst=Object.assign({},S.psts.find(z=>z.id=='${x.id}').d);go('poster')">Open</button> ${isLead()||x.house===myHouse()?`<button class="g" onclick="confirm('Delete?')&&del('posters','${x.id}')">✕</button>`:""}</div>`).join("")||`<span class="mu">None yet.</span>`}</div>`},
+house(){return `<h2>Houses</h2><div class="grid">${Object.keys(HOUSES).map(h=>{const p=S.projects.filter(x=>x.house==h),t=S.tasks.filter(x=>x.house==h),d=t.filter(x=>x.status=="Completed").length;
+ return `<div class="card" style="border-top:5px solid ${HCOL[h]}"><b>${h}</b><div class="mu">Captain ${HOUSES[h][0]} · Vice ${HOUSES[h][1]}</div><p>${p.length} projects · ${t.length-d} pending · ${d} done</p><div style="height:8px;background:var(--bd);border-radius:8px"><div style="height:8px;width:${t.length?Math.round(d/t.length*100):0}%;background:${HCOL[h]};border-radius:8px;transition:.6s"></div></div></div>`}).join("")}</div>`}};
+const SYS="You are GovBot, assistant for a school student government with houses Tigers, Whales, Hawks, Tuskers. Be practical and school-appropriate.";
+async function ai(prompt,fn,img,tools){if(!sample){toast("AI unavailable");return null}
+ try{S.busy=true;return await sample(prompt,{onText:fn||undefined,cache:false,images:img,tools})}catch(e){toast(e.code=="not_granted"?"AI permission was declined":"AI error: "+(e.message||e.code));return null}finally{S.busy=false}}
+async function gen(){S.idea=$("idea").value.trim();if(!S.idea)return toast("Describe your idea first");S.house=$("ph").value;
+ const r=await ai(`${SYS}\nCreate a complete event plan in Markdown for: "${S.idea}".\nInclude: title, description, objective, theme, audience, chronological flow, stage table (activity, start-end time, description, responsible, materials, instructions, transition), opening and closing scripts, anchor dialogues, games, materials, roles, preparation timeline, budget estimate (mark as estimate), decoration, backup plans, safety and accessibility, checklist, post-event feedback.`,x=>{S.plan=x.text;const e=$("pt");e&&(e.value=x.text)});
+ if(r){S.plan=r.text}go("plan")}
+async function refine(ins){if(!ins.trim())return;const r=await ai(`${SYS}\nHere is the current event plan:\n${S.plan}\n\nUpdate THIS plan (same event) per the instruction and return the full updated plan in Markdown. Instruction: ${ins}`,x=>{const e=$("pt");e&&(e.value=x.text)});if(r){S.plan=r.text;go("plan")}}
+function title(){return (S.plan.match(/^#+\s*(.+)$/m)||[0,S.idea.slice(0,60)||"Untitled event"])[1].replace(/[*#]/g,"").trim()}
+async function saveProj(){const old=S.projects.find(p=>p.id==S.cur);await save("projects",{id:S.cur||undefined,title:title(),idea:S.idea,plan:S.plan,house:old?.house||$("ph").value,status:old?.status||"Planning",by:S.me});S.cur=null;toast("Saved to projects")}
+async function upd(i,s){await db.collection("projects").doc(i).update({status:s})}
+async function toTasks(){const r=await ai(`From this event plan, return ONLY a JSON array of 6-12 tasks: [{"title":"","priority":"High|Medium|Low"}].\n${S.plan}`);if(!r)return;
+ try{const a=JSON.parse(r.text.replace(/```json|```/g,"").trim());for(const t of a)await save("tasks",{title:t.title,priority:t.priority||"Medium",status:"Not Started",house:$("ph")?.value||"All",project:title(),by:S.me});toast(a.length+" tasks created");go("task")}catch(e){toast("Couldn't parse tasks — try again")}}
+function exp(){if(!dl)return toast("Downloads unavailable here");dl.save({filename:title().replace(/\W+/g,"-")+".md",data:S.plan}).catch(()=>{})}
+async function addTask(){const t=$("tt").value.trim();if(!t)return toast("Enter a title");const h=isLead()?$("ta").value:myHouse();await save("tasks",{title:t,due:$("td").value,house:h,who:$("tw").value,priority:$("tp").value,status:"Not Started",by:S.me})}
+async function mv(i,s){const t=S.tasks.find(x=>x.id==i);if(!isLead()&&t.house!==myHouse())return toast("You can't edit another house's tasks");await db.collection("tasks").doc(i).update({status:s})}
+async function addAnn(){const t=$("at").value.trim();if(!t)return toast("Add a title");await save("announcements",{title:t,body:$("ab").value,house:$("ah").value,by:S.me,at:Date.now()});toast("Published")}
+function md(t){let h=esc(t).split("\n"),o="",tb=0,ul=0;const inl=x=>x.replace(/\*\*(.+?)\*\*/g,"<b>$1</b>");
+ for(const l of h){const row=/^\s*\|/.test(l);if(row&&!tb){o+="<table style='border-collapse:collapse;width:100%;font-size:13px'>";tb=1}if(!row&&tb){o+="</table>";tb=0}
+  const li=/^\s*[-*] /.test(l);if(li&&!ul){o+="<ul>";ul=1}if(!li&&ul){o+="</ul>";ul=0}
+  if(row){if(/^[\s|:-]+$/.test(l))continue;o+="<tr>"+l.trim().replace(/^\||\|$/g,"").split("|").map(c=>`<td style='border:1px solid var(--bd);padding:4px'>${inl(c)}</td>`).join("")+"</tr>"}
+  else if(li)o+="<li>"+inl(l.replace(/^\s*[-*] /,""))+"</li>";else if(/^### /.test(l))o+="<h4>"+inl(l.slice(4))+"</h4>";else if(/^## /.test(l))o+="<h3>"+inl(l.slice(3))+"</h3>";else if(/^# /.test(l))o+="<h2>"+inl(l.slice(2))+"</h2>";else o+=l.trim()?"<p>"+inl(l)+"</p>":""}
+ return o+(tb?"</table>":"")+(ul?"</ul>":"")}
+function prev(){const e=$("dp");if(e)e.innerHTML=md(S.doc.body)}
+async function genDoc(){const d=S.doc;if(!d.name&&!d.details)return toast("Enter an event name or details first");
+ const r=await ai(`${SYS}\nWrite a professional school document. Type: ${d.tpl}. Event: ${d.name||"(see details)"}. Date: ${d.date||"TBD"}. Venue: ${d.venue||"TBD"}. House: ${d.house}. Prepared by: ${S.me}, ${POS[S.me]||"House leader"}, Student Government. Details: ${d.details||"none"}.\nUse Markdown (headings, lists, tables where useful). Leave clear [placeholders] for facts not given; do not invent names or amounts. Start with a school/student government header.`,x=>{S.doc.body=x.text;const e=$("de");e&&(e.value=x.text);prev()});
+ if(r){S.doc.body=r.text;go("docs")}}
+async function saveDoc(){if(!S.doc.body.trim())return toast("Nothing to save yet");await save("docs",{title:S.doc.name||S.doc.tpl,tpl:S.doc.tpl,body:S.doc.body,house:isLead()?S.doc.house:myHouse(),by:S.me});toast("Document saved")}
+function dlDoc(k){if(!dl)return toast("Downloads unavailable here");if(!S.doc.body.trim())return toast("Nothing to download");const n=(S.doc.name||S.doc.tpl).replace(/\W+/g,"-");
+ dl.save({filename:n+"."+k,data:k=="md"?S.doc.body:`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(n)}</title><style>body{font:14px Calibri,Arial,sans-serif;max-width:760px;margin:30px auto}td{border:1px solid #999;padding:4px}table{border-collapse:collapse}</style></head><body>${md(S.doc.body)}</body></html>`}).catch(()=>{})}
+function houseCol(h){if(!h)return;S.pst.c1="#14183d";S.pst.c2=HCOL[h];S.pst.ac="#ffffff";S.pst.house=h;go("poster")}
+function pimg(f,k){if(!f)return;const i=new Image();i.onload=()=>{S[k]=i;draw()};i.src=URL.createObjectURL(f)}
+function wrap(c,t,x,y,w,lh){const ws=String(t).split(" ");let l="",ys=y;for(const q of ws){const z=l?l+" "+q:q;if(c.measureText(z).width>w&&l){c.fillText(l,x,ys);l=q;ys+=lh}else l=z}c.fillText(l,x,ys);return ys+lh}
+function draw(){const cv=$("cv");if(!cv)return;const c=cv.getContext("2d"),p=S.pst,W=800,H=1100;
+ const g=c.createLinearGradient(0,0,W,H);g.addColorStop(0,p.c1);g.addColorStop(1,p.c2);c.fillStyle=g;c.fillRect(0,0,W,H);
+ if(S.bgi){const k=Math.max(W/S.bgi.width,H/S.bgi.height);c.drawImage(S.bgi,(W-S.bgi.width*k)/2,(H-S.bgi.height*k)/2,S.bgi.width*k,S.bgi.height*k);c.fillStyle="#0007";c.fillRect(0,0,W,H)}
+ c.globalAlpha=.18;c.strokeStyle=c.fillStyle=p.ac;
+ if(p.pat=="circles"){for(let i=0;i<7;i++){c.beginPath();c.arc(i%2?W:0,200+i*140,90+i*30,0,7);i%3?c.stroke():c.fill()}}
+ if(p.pat=="rays"){c.translate(W/2,H*.35);for(let i=0;i<24;i++){c.rotate(Math.PI/12);c.fillRect(0,-6,900,i%2?4:12)}c.setTransform(1,0,0,1,0,0)}
+ if(p.pat=="stripes"){for(let i=-H;i<W;i+=60){c.beginPath();c.moveTo(i,H);c.lineTo(i+H,0);c.lineWidth=14;c.stroke()}}
+ if(p.pat=="grid"){c.lineWidth=1;for(let i=0;i<W;i+=50){c.beginPath();c.moveTo(i,0);c.lineTo(i,H);c.stroke()}for(let j=0;j<H;j+=50){c.beginPath();c.moveTo(0,j);c.lineTo(W,j);c.stroke()}}
+ c.globalAlpha=1;c.textAlign="center";c.fillStyle=p.ac;c.fillRect(W/2-60,360,120,6);
+ if(S.logo){const k=120/Math.max(S.logo.width,S.logo.height);c.drawImage(S.logo,W/2-S.logo.width*k/2,60,S.logo.width*k,S.logo.height*k)}
+ c.fillStyle=p.tx;c.font=`bold 84px ${p.font}`;let y=wrap(c,p.title.toUpperCase(),W/2,480,W-120,96);
+ c.fillStyle=p.ac;c.font=`italic 36px ${p.font}`;y=wrap(c,p.sub,W/2,y+20,W-160,46);
+ c.fillStyle=p.tx;c.font=`bold 38px ${p.font}`;if(p.date)c.fillText(p.date,W/2,H-190);c.font=`30px ${p.font}`;if(p.venue)c.fillText(p.venue,W/2,H-140);
+ c.fillStyle=p.ac;c.fillRect(0,H-40,W,40)}
+function dlPoster(k){if(!dl)return toast("Downloads unavailable here");$("cv").toBlob(b=>dl.save({filename:(S.pst.title||"poster").replace(/\W+/g,"-")+"."+k,data:b}).catch(()=>{}),k=="png"?"image/png":"image/jpeg",.92)}
+async function savePoster(){await save("posters",{d:S.pst,house:isLead()?S.pst.house:myHouse(),by:S.me});toast("Design saved (images aren't stored)")}
+async function genPoster(){const p=$("pp").value.trim();if(!p)return toast("Describe the poster first");S.pst.prompt=p;
+ const r=await ai(`Design a school event poster from this request: "${p}". Return ONLY JSON: {"title":"","sub":"","c1":"#hex dark","c2":"#hex","ac":"#hex accent","tx":"#hex readable on c1/c2","font":"one of: Georgia, serif | Impact, Haettenschweller, sans-serif | Trebuchet MS, system-ui, sans-serif | Courier New, monospace | Brush Script MT, cursive","pat":"circles|rays|stripes|grid|none"}. Keep title under 6 words. Do not invent dates or venues.`);
+ if(!r)return;try{const j=JSON.parse(r.text.replace(/```json|```/g,"").trim());["title","sub","c1","c2","ac","tx","font","pat"].forEach(k=>{if(j[k])S.pst[k]=j[k]});go("poster");toast("Design ready — tweak anything")}catch(e){toast("Couldn't read the design — try again")}}
+let SPEAK=false,REC=null;
+function listen(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return toast("Voice input isn't supported in this browser — try Chrome or Safari, or type instead");
+ if(REC){REC.stop();return}
+ const r=REC=new SR();r.lang="en-IN";r.interimResults=true;r.continuous=false;const b=$("mic");let fin="";
+ r.onstart=()=>{b.textContent="🔴";toast("Listening…")};
+ r.onresult=e=>{fin=[...e.results].map(x=>x[0].transcript).join(" ");$("bi").value=fin};
+ r.onerror=e=>{toast(e.error=="not-allowed"||e.error=="service-not-allowed"?"Microphone is blocked in this view — allow mic access or type instead":"Voice error: "+e.error)};
+ r.onend=()=>{REC=null;b.textContent="🎤";if($("bi").value.trim())bot()};
+ try{r.start()}catch(e){REC=null;toast("Couldn't start the microphone")}}
+function govTools(){const need=()=>{if(!db)throw new Error("Storage unavailable")};
+ return [
+ {name:"add_task",description:"Create a task. Non-leadership users can only add to their own house.",inputSchema:{type:"object",properties:{title:{type:"string"},house:{type:"string",enum:["All","Tigers","Whales","Hawks","Tuskers"]},assignee:{type:"string"},priority:{type:"string",enum:["High","Medium","Low"]},due:{type:"string",description:"YYYY-MM-DD"}},required:["title"]},
+  async execute(a){need();const h=isLead()?(a.house||"All"):myHouse();await save("tasks",{title:a.title,house:h,who:a.assignee||"",priority:a.priority||"Medium",due:a.due||"",status:"Not Started",by:S.me});return{ok:true,house:h}}},
+ {name:"update_task_status",description:"Change a task's status by (part of) its title.",inputSchema:{type:"object",properties:{title:{type:"string"},status:{type:"string",enum:STAT}},required:["title","status"]},
+  async execute(a){need();const t=mt().find(x=>x.title.toLowerCase().includes(a.title.toLowerCase()));if(!t)return{ok:false,error:"No matching task"};if(!isLead()&&t.house!==myHouse())throw new Error("Not allowed: another house's task");await db.collection("tasks").doc(t.id).update({status:a.status});return{ok:true,task:t.title}}},
+ {name:"list_tasks",description:"List tasks the user can see.",inputSchema:{type:"object",properties:{}},async execute(){return mt().slice(0,30).map(t=>({title:t.title,house:t.house,status:t.status,due:t.due||""}))}},
+ {name:"post_announcement",description:"Publish an announcement. Leadership only.",inputSchema:{type:"object",properties:{title:{type:"string"},body:{type:"string"},house:{type:"string",enum:["All","Tigers","Whales","Hawks","Tuskers"]}},required:["title"]},
+  async execute(a){need();if(!isLead())throw new Error("Only leadership can post announcements");await save("announcements",{title:a.title,body:a.body||"",house:a.house||"All",by:S.me,at:Date.now()});return{ok:true}}}]}
+const hist=[];async function bot(){const i=$("bi").value.trim();if(!i)return;$("bi").value="";const m=$("msgs");m.insertAdjacentHTML("beforeend",`<div class="m"><b>You:</b> ${esc(i)}</div><div class="m" id="bm">…</div>`);hist.push({role:"user",content:i});
+ const ctx=`${SYS}\nUser: ${S.me} (${POS[S.me]||myHouse()}). Projects they can see: ${mp().map(p=>p.title+" ["+p.status+"]").join("; ")||"none"}.`;
+ const r=await ai(ctx+"\n\nConversation:\n"+hist.slice(-8).map(h=>h.role+": "+h.content).join("\n")+"\nRespond as GovBot. You can use tools to add tasks, update task status, list tasks and (leadership only) post announcements when asked; confirm briefly what you did. Today is "+new Date().toISOString().slice(0,10)+".",x=>{$("bm").textContent=x.text;m.scrollTop=m.scrollHeight},undefined,govTools());
+ if(r){hist.push({role:"assistant",content:r.text});if(SPEAK&&window.speechSynthesis){speechSynthesis.cancel();speechSynthesis.speak(new SpeechSynthesisUtterance(r.text.slice(0,500)))}}else $("bm").textContent="GovBot is unavailable right now."}
+init();
+</script></body></html>
